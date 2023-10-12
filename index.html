@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #181818;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #messages {
+            height: 400px;
+            overflow: auto;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 50%;
+            background-color: #222;
+        }
+
+        #input {
+            width: 40%;
+            padding: 5px;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #e0e0e0;
+        }
+
+        button {
+            padding: 5px 10px;
+            background-color: #555;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+
+        .user-message,
+        .bot-message {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+
+        .user-message {
+            background-color: #333;
+            align-self: flex-end;
+            font-size: 1.5em;
+        }
+
+        .bot-message {
+            background-color: #444;
+        }
+
+        @keyframes cursorBlink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            background-color: #e0e0e0;
+            width: 2px;
+            height: 1em;
+            margin-left: 2px;
+            animation: cursorBlink 0.7s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function () {
+            var socket = io();
+
+            $('form').submit(function (e) {
+                e.preventDefault();
+                var msg = $('#input').val();
+                socket.emit('chat message', msg);
+                $('#input').val('');
+                return false;
+            });
+
+            socket.on('user message', function (msg) {
+                $('#messages').append('<div class="user-message">' + msg + '</div>');
+                scrollToBottom();
+            });
+
+            socket.on('bot message', function (msg) {
+                typeMessage(msg, 'bot-message');
+            });
+
+            function typeMessage(message, className) {
+                let currentChar = 0;
+                let messageContainer = $('<div class="' + className + '"></div>').appendTo('#messages');
+                let cursor = $('<span class="typing-cursor"></span>').appendTo(messageContainer);
+
+                function typeNextChar() {
+                    if (currentChar < message.length) {
+                        // If it's a new line character, add a break
+                        if (message[currentChar] === '\n') {
+                            messageContainer.append('<br>');
+                        } else {
+                            messageContainer.append(message[currentChar]);
+                        }
+                        currentChar++;
+                        setTimeout(typeNextChar, Math.random() * (100 - 30) + 30); // Random delay between 30ms to 100ms for a realistic effect
+                    } else {
+                        cursor.remove(); // Remove the typing cursor once done
+                        scrollToBottom();
+                    }
+                }
+
+                typeNextChar();
+            }
+
+            function scrollToBottom() {
+                var messages = $("#messages");
+                messages.scrollTop(messages.prop("scrollHeight"));
+            }
+        });
+    </script>
+</body>
+
+</html>
